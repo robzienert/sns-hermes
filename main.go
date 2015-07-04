@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -17,9 +18,18 @@ var (
 	region   string
 	topicARN = kingpin.Arg("queue", "SNS Topic ARN").Required().String()
 	debug    = kingpin.Flag("debug", "Enable debug mode").Short('d').Bool()
+
+	messagesReceived = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "hermes_received_messages_total",
+		Help: "Number of messages processd by Hermes",
+	})
+	messagesErrored = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "hermes_error_alerts_total",
+		Help: "Number of messages received by Hermes that ended in an error",
+	})
 )
 
-func main() {
+func init() {
 	kingpin.Parse()
 
 	if *debug {
@@ -35,14 +45,23 @@ func main() {
 		"debug":    *debug,
 	}).Info("starting webhook service")
 
+	prometheus.MustRegister(messagesReceived)
+	prometheus.MustRegister(messagesErrored)
+}
+
+func main() {
 	r := gin.Default()
 	r.POST("/event", func(c *gin.Context) {
+		messagesReceived.Inc()
+
 		defer c.Request.Body.Close()
 		body, err := ioutil.ReadAll(c.Request.Body)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"origErr": err.Error(),
 			}).Error("could not read request body")
+			messagesErrored.Inc()
+			return
 		}
 
 		if *debug {
@@ -67,6 +86,7 @@ func main() {
 						"requestId":  reqErr.RequestID(),
 					}).Error(reqErr.Message())
 					c.String(http.StatusInternalServerError, "ERR")
+					messagesErrored.Inc()
 					return
 				}
 				c.String(http.StatusBadGateway, "ERR")
@@ -74,6 +94,7 @@ func main() {
 				log.Error(err.Error())
 				c.String(http.StatusInternalServerError, "ERR")
 			}
+			messagesErrored.Inc()
 			return
 		}
 
@@ -82,6 +103,8 @@ func main() {
 		}).Info("successfully forwarded message")
 		c.String(http.StatusNoContent, "")
 	})
+
+	r.GET("/metrics", gin.WrapH(prometheus.Handler()))
 
 	r.Run(":8080")
 }
