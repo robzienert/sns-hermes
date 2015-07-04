@@ -16,7 +16,7 @@ import (
 
 var (
 	region   string
-	topicARN = kingpin.Arg("queue", "SNS Topic ARN").Required().String()
+	topicARN = kingpin.Arg("topic", "SNS Topic ARN").Required().String()
 	debug    = kingpin.Flag("debug", "Enable debug mode").Short('d').Bool()
 
 	messagesReceived = prometheus.NewCounter(prometheus.CounterOpts{

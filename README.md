@@ -8,11 +8,11 @@ to send alerts to a queue that's being listened to by alert remediation scripts.
 ## Usage
 
   $ go run main.go --help
-  usage: main [<flags>] <queue>
+  usage: main [<flags>] <topic>
 
   Flags:
-  --help       Show help.
-  -d, --debug  Enable debug mode
+    --help       Show help.
+    -d, --debug  Enable debug mode
 
   Args:
-  <queue>  SNS Topic ARN
+    <topic>  SNS Topic ARN
