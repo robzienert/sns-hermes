@@ -24,7 +24,7 @@ var (
 		Help: "Number of messages processd by Hermes",
 	})
 	messagesErrored = prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "hermes_error_alerts_total",
+		Name: "hermes_error_messages_total",
 		Help: "Number of messages received by Hermes that ended in an error",
 	})
 )
