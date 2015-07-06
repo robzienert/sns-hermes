@@ -1,4 +1,4 @@
-# sqs-hermes
+# sns-hermes
 
 A simple service that forwards webhook POST requests to SNS.
 
